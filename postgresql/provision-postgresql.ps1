@@ -362,7 +362,7 @@ $vm1Configuration = Add-AzureEndpoint -Name "PostgreSQL" -LBSetName "PostgreSQLS
 $vm2Configuration = Add-AzureEndpoint -Name "PostgreSQL" -LBSetName "PostgreSQLSet" -Protocol tcp -LocalPort $loadBalancedPort -PublicPort $loadBalancedPort -ProbePort $loadBalancedPort -ProbeProtocol tcp -ProbeIntervalInSeconds 5 -InternalLoadBalancerName $internalLoadBalancerName -VM $vm2Configuration
 
 # Set the CustomScript extension to continue setup once the VMs are created
-$PublicConfiguration = '{"fileUris":["https://github.com/sabbour/azure-automation/postgresql/CustomScripts/finalize-postgres.sh"], "commandToExecute": "./finalize-postgres.sh" }' 
+$PublicConfiguration = '{"fileUris":["https://raw.githubusercontent.com/sabbour/azure-automation/master/postgresql/CustomScripts/finalize-postgresql.sh"], "commandToExecute": "./finalize-postgres.sh" }' 
 
 # Deploy the extension to the VM, pick up the latest version of the extension
 $ExtensionName = 'CustomScriptForLinux'  
