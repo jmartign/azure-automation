@@ -282,60 +282,62 @@ Exit
 Write-Host "Available Azure Locations" -BackgroundColor Black -ForegroundColor Green
 (Get-AzureLocation).Name
 
+# Inputs
+Write-Host "Settings for provisioning the environment" -BackgroundColor Black -ForegroundColor Green
+$affinityGroup = Get-Input -message "Affinity group name (should be up to 100 characters)"
+$affinityGroupLoca6ion =  Get-Input -message "Storage account name (one of the locations above)"
+$storageAccount =  Get-Input -message "Storage account name (lowercase letters and numbers between 3-24 characters)"
+$networkName =  Get-Input -message "Network name (example: postgresqlnet)"
+$vnetAddressPrefix = Get-Input -message "Address prefix (example: 10.0.0.0/8)"
+$subnetName = Get-Input -message "Database subnet name (example: database)"
+$databaseSubnetPrefix = Get-Input -message "Database subnet prefix (example: 10.0.0.0)"
+$databaseSubnetCIDR = Get-Input -message "Database subnet CIDR (example: /24)"
+$cloudServiceName =  Get-Input -message "Cloud Service host name (example: postgresqlcs)"
+$availabilitySetName =  Get-Input -message "Availability Set name (example: posgresqlavset)"
+$vmUsername = Get-Input -Message "Username"
+$vmPassword = Get-Input -Message "Password"
+$vmBaseName = Get-Input -Message "Base VM name (example: postgresql)"
+$vm1StaticIP = Get-Input -Message "Static IP for VM1 (must be in the subnet you specified earlier, example: 10.0.0.5)"
+$vm2StaticIP = Get-Input -Message "Static IP for VM2 (must be in the subnet you specified earlier, example: 10.0.0.6)"
+$internalLoadBalancerName = Get-Input -Message "Internal Load Balancer name (for example postgresqllb)"
+$internalLoadBalancerIP = Get-Input -Message "Internal Load Balancer IP (must be in the subnet you specified earlier, example: 10.0.0.100)"
+$dataDiksSizeGB = Get-Input -Message "Size of Data disks in GB (example: 50)"
+
 # Create Affinity Group
 Write-Host "Create the Affinity Group to host our resources" -BackgroundColor Black -ForegroundColor Green
-Write-Host "Note: Label should be up to 100 characters" -BackgroundColor Black -ForegroundColor Green
-Write-Host "Note: Location should be one of the locations from above" -BackgroundColor Black -ForegroundColor Green
-
-$affinityGroup = Get-Input -message "Affinity group name"
-New-AzureAffinityGroup -Name $affinityGroup
+New-AzureAffinityGroup -Name $affinityGroup -Description "Affinity group for PostgreSQL cluster"
 
 # Create Storage Account inside the Affinity Group
 Write-Host "Create the Storage Account" -BackgroundColor Black -ForegroundColor Green
-Write-Host "Note: Name should be lowercase letters and numbers between 3-24 characters" -BackgroundColor Black -ForegroundColor Green
-
-$storageAccount =  Get-Input -message "Storage account name"
-New-AzureStorageAccount -StorageAccountName $storageAccount -AffinityGroup $affinityGroup -Description "Storage account holding PostgreSQL cluster VHDs"
+New-AzureStorageAccount -StorageAccountName $storageAccount -AffinityGroup $affinityGroup -Type "Standard_LRS" -Description  "Storage account holding PostgreSQL cluster VHDs"
 
 # Change the default Storage Account to this one
-Set-AzureStorageAccount -StorageAccountName $storageAccount -GeoReplicationEnabled $false -Verbose
+Write-Host "Using this Storage Accout as default" -BackgroundColor Black -ForegroundColor Green
+Set-AzureSubscription -SubscriptionName (Get-AzureSubscription –Current).SubscriptionName -CurrentStorageAccount $storageAccount
 
 # Create Virtual Network
 Write-Host "Create the Virtual Network" -BackgroundColor Black -ForegroundColor Green
 $workingVnetConfig = get-azureNetworkXml
-
-$networkName =  Get-Input -message "Network name"
-$vnetAddressPrefix = Get-Input -message "Address prefix (like 10.0.0.0/8)"
-$subnetName = Get-Input -message "Database subnet name"
-$databaseSubnetPrefix = Get-Input -message "Database subnet prefix (like 10.0.0.0/24)"
 add-azureVnetNetwork  -affinityGroup $affinityGroup -networkName $networkName -addressPrefix $vnetAddressPrefix
-add-azureVnetSubnet -networkName $networkName -subnetName $subnetName -addressPrefix $databaseSubnetPrefix
+add-azureVnetSubnet -networkName $networkName -subnetName $subnetName -addressPrefix ($databaseSubnetPrefix+$databaseSubnetCIDR)
 save-azurenetworkxml($workingVnetConfig)
 
 # Create a Cloud Service to hold the VMs
 Write-Host "Create a Cloud Service to hold the machines" -BackgroundColor Black -ForegroundColor Green
-$cloudServiceName =  Get-Input -message "Cloud Service host name"
 New-AzureService -ServiceName $cloudServiceName -AffinityGroup $affinityGroup -Description "PostgreSQL Cluster Cloud Service" -Verbose
 
 # Get the CentOS7 VM image (last one, probably most up to date)
 Write-Host "Latest image of CentOS 7" -BackgroundColor Black -ForegroundColor Green
 $centosImageName = (Get-AzureVMImage | ? {$_.ImageName -Like "*OpenLogic-CentOS-70*"} | select -Last 1).ImageName
-Write-Host $centosImageName
-
-# Get provisioning details for the VMs
-Write-Host "Settings for provisioning the VMs" -BackgroundColor Black -ForegroundColor Green
-$vmUsername = Get-Input -Message "Username"
-$vmPassword = Get-Input -Message "Password"
-$vmBaseName = Get-Input -Message "Base VM name (example: postgresql)"
-$vm1StaticIP = Get-Input -Message "Static IP for VM1 (must be in the subnet you specified earlier, for example 10.0.0.5)"
-$vm2StaticIP = Get-Input -Message "Static IP for VM2 (must be in the subnet you specified earlier, for example 10.0.0.6)"
-$internalLoadBalancerName = Get-Input -Message "Internal Load Balancer name (for example postgresqllb)"
-$internalLoadBalancerIP = Get-Input -Message "Internal Load Balancer IP (must be in the subnet you specified earlier, for example 10.0.0.100)"
-$dataDiksSizeGB = Get-Input -Message "Size of Data disks in GB (example: 50)"
+Write-Host "Using " + $centosImageName
 
 # Create VM configurations
-$vm1Configuration = New-AzureVMConfig -Name $vmBaseName + "01" -InstanceSize Small -ImageName $centosImageName
-$vm2Configuration = New-AzureVMConfig -Name $vmBaseName + "02" -InstanceSize Small -ImageName $centosImageName
+$vm1Configuration = New-AzureVMConfig -Name ($vmBaseName + "01") -InstanceSize Standard_A1 -ImageName $centosImageName
+$vm2Configuration = New-AzureVMConfig -Name ($vmBaseName + "02") -InstanceSize Standard_A1 -ImageName $centosImageName
+
+# Add Availability Set configuration
+$vm1Configuration = Set-AzureAvailabilitySet -AvailabilitySetName $availabilitySetName -VM $vm1Configuration
+$vm2Configuration = Set-AzureAvailabilitySet -AvailabilitySetName $availabilitySetName -VM $vm2Configuration
 
 # Add provisioning configuration
 $vm1Configuration = Add-AzureProvisioningConfig -Linux -LinuxUser $vmUsername -Password $vmPassword -VM $vm1Configuration
@@ -348,10 +350,10 @@ $vm1Configuration = Set-AzureSubnet -SubnetNames $subnetName -VM $vm1Configurati
 $vm2Configuration = Set-AzureSubnet -SubnetNames $subnetName -VM $vm2Configuration
 
 # Add data disk configuration 
-$vm1Configuration = Add-AzureDataDisk -CreateNew -DiskSizeInGB $dataDiksSizeGB -DiskLabel $vmBaseName + "01-DataDisk01" -LUN 0 -VM $vm1Configuration
-$vm1Configuration = Add-AzureDataDisk -CreateNew -DiskSizeInGB $dataDiksSizeGB -DiskLabel $vmBaseName + "01-DataDisk02" -LUN 1 -VM $vm1Configuration
-$vm2Configuration = Add-AzureDataDisk -CreateNew -DiskSizeInGB $dataDiksSizeGB -DiskLabel $vmBaseName + "02-DataDisk01" -LUN 0 -VM $vm2Configuration
-$vm2Configuration = Add-AzureDataDisk -CreateNew -DiskSizeInGB $dataDiksSizeGB -DiskLabel $vmBaseName + "02-DataDisk02" -LUN 1 -VM $vm2Configuration
+$vm1Configuration = Add-AzureDataDisk -CreateNew -DiskSizeInGB $dataDiksSizeGB -DiskLabel ($vmBaseName + "01-DataDisk01") -LUN 0 -VM $vm1Configuration
+$vm1Configuration = Add-AzureDataDisk -CreateNew -DiskSizeInGB $dataDiksSizeGB -DiskLabel ($vmBaseName + "01-DataDisk02") -LUN 1 -VM $vm1Configuration
+$vm2Configuration = Add-AzureDataDisk -CreateNew -DiskSizeInGB $dataDiksSizeGB -DiskLabel ($vmBaseName + "02-DataDisk01") -LUN 0 -VM $vm2Configuration
+$vm2Configuration = Add-AzureDataDisk -CreateNew -DiskSizeInGB $dataDiksSizeGB -DiskLabel ($vmBaseName + "02-DataDisk02") -LUN 1 -VM $vm2Configuration
 
 # Add internal load balancer configuration
 $ilbConfig = New-AzureInternalLoadBalancerConfig -InternalLoadBalancerName $internalLoadBalancerName -StaticVNetIPAddress $internalLoadBalancerIP -SubnetName $subnetName
@@ -362,7 +364,7 @@ $vm1Configuration = Add-AzureEndpoint -Name "PostgreSQL" -LBSetName "PostgreSQLS
 $vm2Configuration = Add-AzureEndpoint -Name "PostgreSQL" -LBSetName "PostgreSQLSet" -Protocol tcp -LocalPort $loadBalancedPort -PublicPort $loadBalancedPort -ProbePort $loadBalancedPort -ProbeProtocol tcp -ProbeIntervalInSeconds 5 -InternalLoadBalancerName $internalLoadBalancerName -VM $vm2Configuration
 
 # Set the CustomScript extension to continue setup once the VMs are created
-$PublicConfiguration = '{"fileUris":["https://raw.githubusercontent.com/sabbour/azure-automation/master/postgresql/CustomScripts/finalize-postgresql.sh"], "commandToExecute": "./finalize-postgres.sh" }' 
+$PublicConfiguration = '{"fileUris":["https://raw.githubusercontent.com/sabbour/azure-automation/master/postgresql/CustomScripts/finalize-postgresql.sh"], "commandToExecute": "./finalize-postgres.sh ' + ($vmBaseName + "01") + ' ' + ($vmBaseName + "02") + ' ' + $vm1StaticIP + ' ' + $vm2StaticIP + ' ' + $databaseSubnetPrefix + '" }' 
 
 # Deploy the extension to the VM, pick up the latest version of the extension
 $ExtensionName = 'CustomScriptForLinux'  
