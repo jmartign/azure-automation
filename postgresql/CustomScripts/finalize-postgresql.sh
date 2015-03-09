@@ -45,7 +45,6 @@ echo "Creating data directory mount point for PostgreSQL"
 mkdir -p -m 0700 /var/lib/pgsql/data
 echo "Creating ext4 filesystem and on the DRBD resource on Primary Node only"
 if [ $(hostname) == $1 ]; then
-    drbdadm primary --force r0
     drbdadm --force --overwrite-data-of-peer primary r0
     mkfs -t ext4 /dev/drbd0
     mount /dev/drbd0 /var/lib/pgsql/data

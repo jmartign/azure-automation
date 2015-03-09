@@ -285,10 +285,10 @@ Write-Host "Available Azure Locations" -BackgroundColor Black -ForegroundColor G
 # Inputs
 Write-Host "Settings for provisioning the environment" -BackgroundColor Black -ForegroundColor Green
 $affinityGroup = Get-Input -message "Affinity group name (should be up to 100 characters)"
-$affinityGroupLoca6ion =  Get-Input -message "Storage account name (one of the locations above)"
+$affinityGroupLocation =  Get-Input -message "Affinity group location (one of the locations above)"
 $storageAccount =  Get-Input -message "Storage account name (lowercase letters and numbers between 3-24 characters)"
-$networkName =  Get-Input -message "Network name (example: postgresqlnet)"
-$vnetAddressPrefix = Get-Input -message "Address prefix (example: 10.0.0.0/8)"
+$networkName =  Get-Input -message "Network name (example: pgsqlnet)"
+$vnetAddressPrefix = Get-Input -message "Address and CIDR (example: 10.0.0.0/8)"
 $subnetName = Get-Input -message "Database subnet name (example: database)"
 $databaseSubnetPrefix = Get-Input -message "Database subnet prefix (example: 10.0.0.0)"
 $databaseSubnetCIDR = Get-Input -message "Database subnet CIDR (example: /24)"
@@ -305,14 +305,14 @@ $dataDiksSizeGB = Get-Input -Message "Size of Data disks in GB (example: 50)"
 
 # Create Affinity Group
 Write-Host "Create the Affinity Group to host our resources" -BackgroundColor Black -ForegroundColor Green
-New-AzureAffinityGroup -Name $affinityGroup -Description "Affinity group for PostgreSQL cluster"
+New-AzureAffinityGroup -Name $affinityGroup -Description "Affinity group for PostgreSQL cluster"-Location $affinityGroupLocation
 
 # Create Storage Account inside the Affinity Group
 Write-Host "Create the Storage Account" -BackgroundColor Black -ForegroundColor Green
 New-AzureStorageAccount -StorageAccountName $storageAccount -AffinityGroup $affinityGroup -Type "Standard_LRS" -Description  "Storage account holding PostgreSQL cluster VHDs"
 
 # Change the default Storage Account to this one
-Write-Host "Using this Storage Accout as default" -BackgroundColor Black -ForegroundColor Green
+Write-Host "Using this Storage Account as default" -BackgroundColor Black -ForegroundColor Green
 Set-AzureSubscription -SubscriptionName (Get-AzureSubscription –Current).SubscriptionName -CurrentStorageAccount $storageAccount
 
 # Create Virtual Network
@@ -329,11 +329,11 @@ New-AzureService -ServiceName $cloudServiceName -AffinityGroup $affinityGroup -D
 # Get the CentOS7 VM image (last one, probably most up to date)
 Write-Host "Latest image of CentOS 7" -BackgroundColor Black -ForegroundColor Green
 $centosImageName = (Get-AzureVMImage | ? {$_.ImageName -Like "*OpenLogic-CentOS-70*"} | select -Last 1).ImageName
-Write-Host "Using " + $centosImageName
+Write-Host ("Using " + $centosImageName)
 
 # Create VM configurations
-$vm1Configuration = New-AzureVMConfig -Name ($vmBaseName + "01") -InstanceSize Standard_A1 -ImageName $centosImageName
-$vm2Configuration = New-AzureVMConfig -Name ($vmBaseName + "02") -InstanceSize Standard_A1 -ImageName $centosImageName
+$vm1Configuration = New-AzureVMConfig -Name ($vmBaseName + "01") -InstanceSize Small -ImageName $centosImageName
+$vm2Configuration = New-AzureVMConfig -Name ($vmBaseName + "02") -InstanceSize Small -ImageName $centosImageName
 
 # Add Availability Set configuration
 $vm1Configuration = Set-AzureAvailabilitySet -AvailabilitySetName $availabilitySetName -VM $vm1Configuration

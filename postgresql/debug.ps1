@@ -82,8 +82,8 @@ $PublicConfiguration = '{"fileUris":["https://raw.githubusercontent.com/sabbour/
 $ExtensionName = 'CustomScriptForLinux'  
 $Publisher = 'Microsoft.OSTCExtensions'  
 $Version = '1.*' 
-$vm1Configuration = Set-AzureVMExtension -ExtensionName $ExtensionName -VM  $vm1Configuration -Publisher $Publisher -Version $Version -PublicConfiguration $PublicConfiguration
-$vm2Configuration = Set-AzureVMExtension -ExtensionName $ExtensionName -VM  $vm2Configuration -Publisher $Publisher -Version $Version -PublicConfiguration $PublicConfiguration
+#$vm1Configuration = Set-AzureVMExtension -ExtensionName $ExtensionName -VM  $vm1Configuration -Publisher $Publisher -Version $Version -PublicConfiguration $PublicConfiguration
+#$vm2Configuration = Set-AzureVMExtension -ExtensionName $ExtensionName -VM  $vm2Configuration -Publisher $Publisher -Version $Version -PublicConfiguration $PublicConfiguration
 
 # Create the VMs
 New-AzureVM -ServiceName $cloudServiceName -VMs $vm1Configuration,$vm2Configuration -VNetName $networkName -InternalLoadBalancerConfig $ilbConfig -Verbose
