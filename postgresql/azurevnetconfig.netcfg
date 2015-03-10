@@ -1,0 +1,84 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<NetworkConfiguration xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://schemas.microsoft.com/ServiceHosting/2011/07/NetworkConfiguration">
+  <VirtualNetworkConfiguration>
+    <Dns />
+    <VirtualNetworkSites>
+      <VirtualNetworkSite name="devtestnet" Location="North Europe">
+        <AddressSpace>
+          <AddressPrefix>10.0.0.0/8</AddressPrefix>
+        </AddressSpace>
+        <Subnets>
+          <Subnet name="app">
+            <AddressPrefix>10.0.0.0/11</AddressPrefix>
+          </Subnet>
+          <Subnet name="db">
+            <AddressPrefix>10.32.0.0/11</AddressPrefix>
+          </Subnet>
+        </Subnets>
+      </VirtualNetworkSite>
+      <VirtualNetworkSite name="Group SabbourPOCS mysql" Location="North Europe">
+        <AddressSpace>
+          <AddressPrefix>172.16.1.0/24</AddressPrefix>
+        </AddressSpace>
+        <Subnets>
+          <Subnet name="Subnet-1">
+            <AddressPrefix>172.16.1.0/24</AddressPrefix>
+          </Subnet>
+        </Subnets>
+      </VirtualNetworkSite>
+      <VirtualNetworkSite name="mariadbvnet" AffinityGroup="mariadbcluster">
+        <AddressSpace>
+          <AddressPrefix>10.0.0.0/8</AddressPrefix>
+        </AddressSpace>
+        <Subnets>
+          <Subnet name="mariadb">
+            <AddressPrefix>10.0.0.0/24</AddressPrefix>
+          </Subnet>
+        </Subnets>
+      </VirtualNetworkSite>
+      <VirtualNetworkSite name="MediaEncryptionNet" Location="West Europe">
+        <AddressSpace>
+          <AddressPrefix>192.168.0.0/20</AddressPrefix>
+        </AddressSpace>
+        <Subnets>
+          <Subnet name="Subnet-1">
+            <AddressPrefix>192.168.0.0/23</AddressPrefix>
+          </Subnet>
+        </Subnets>
+      </VirtualNetworkSite>
+      <VirtualNetworkSite name="mysqlvnet" Location="West Europe">
+        <AddressSpace>
+          <AddressPrefix>10.0.0.0/8</AddressPrefix>
+        </AddressSpace>
+        <Subnets>
+          <Subnet name="Subnet-1">
+            <AddressPrefix>10.0.0.0/11</AddressPrefix>
+          </Subnet>
+        </Subnets>
+      </VirtualNetworkSite>
+      <VirtualNetworkSite name="websitenet" Location="West Europe">
+        <AddressSpace>
+          <AddressPrefix>192.168.0.0/20</AddressPrefix>
+        </AddressSpace>
+        <Subnets>
+          <Subnet name="Subnet-1">
+            <AddressPrefix>192.168.0.0/23</AddressPrefix>
+          </Subnet>
+          <Subnet name="GatewaySubnet">
+            <AddressPrefix>192.168.2.0/29</AddressPrefix>
+          </Subnet>
+        </Subnets>
+      </VirtualNetworkSite>
+      <VirtualNetworkSite name="pgsqlnet" AffinityGroup="pgsqlaff">
+        <AddressSpace>
+          <AddressPrefix>10.0.0.0/8</AddressPrefix>
+        </AddressSpace>
+        <Subnets>
+          <Subnet name="database">
+            <AddressPrefix>10.0.0.0/24</AddressPrefix>
+          </Subnet>
+        </Subnets>
+      </VirtualNetworkSite>
+    </VirtualNetworkSites>
+  </VirtualNetworkConfiguration>
+</NetworkConfiguration>

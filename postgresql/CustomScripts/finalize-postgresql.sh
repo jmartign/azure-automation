@@ -1,52 +1,26 @@
-#!/bin/bash
+#!/usr/bin/bash
 
-echo "Opening required firewall ports"
-firewalld
-firewall-cmd --zone=public --add-port=5432/tcp --permanent
-firewall-cmd --zone=public --add-port=5405/tcp --permanent
-firewall-cmd --zone=public --add-port=7789/tcp --permanent
-firewall-cmd --reload
+logger "Configuring prerequisites"
+bash configure-prerequisites.sh
 
-echo "Setting SELinux as Permissive"
-sed -i.bak 's/SELINUX=enforcing/SELINUX=permissive/g' /etc/selinux/config
-setenforce 0
+logger "Configuring RAID and DRBD. Wait for syncing to finish before proceeding."
+bash configure-drbd.sh $1 $2 $3 $4 $5
 
-echo "Enabling EPEL (Extra Packages for Enterprise Linux) repository"
-rpm -import https://www.elrepo.org/RPM-GPG-KEY-elrepo.org
-rpm -Uvh http://www.elrepo.org/elrepo-release-7.0-2.el7.elrepo.noarch.rpm
+# wait for /proc/drbd to have UpToDate/UpToDate
+synced=$(grep -c UpToDate/UpToDate /proc/drbd)
+until [ $synced -ge  1 ]; do
+  logger "DRBD still syncing"
+  synced=$(grep -c UpToDate/UpToDate /proc/drbd)
+  sleep 15s
+done
 
-echo "Installing RAID and DRBD support"
-yum install -y mdadm drbd84-utils kmod-drbd84
+logger "DRBD syncing done"
 
-echo "Creating RAID device"
-mdadm --create --verbose /dev/md0 --level=stripe --raid-devices=2 /dev/sdc /dev/sdd
-mdadm --detail --scan >> /etc/mdadm.conf
+logger "Configuring File System"
+bash configure-filesystem.sh $1 $2 $3 $4 $5
 
-echo "Configuring DRBD"
-echo 'resource r0 {
-    on $1 {
-        device /dev/drbd0;
-        disk /dev/md0;
-        address $3:7789;
-        meta-disk internal;
-    }
-    on $2 {
-        device /dev/drbd0;
-        disk /dev/md0;
-        address $4:7789;
-        meta-disk internal;
-    }'  > /etc/drbd.d/r0.res
+logger "Configuring PostgreSQL"
+bash configure-postgresql.sh $1 $2 $3 $4 $5
 
-echo "Initializing the DRBD resource"
-drbdadm create-md r0
-drbdadm up r0
-
-echo "Creating data directory mount point for PostgreSQL"
-mkdir -p -m 0700 /var/lib/pgsql/data
-echo "Creating ext4 filesystem and on the DRBD resource on Primary Node only"
-if [ $(hostname) == $1 ]; then
-    drbdadm --force --overwrite-data-of-peer primary r0
-    mkfs -t ext4 /dev/drbd0
-    mount /dev/drbd0 /var/lib/pgsql/data
-    chmod 0700 /var/lib/pgsql/data
-fi
+logger "Configuring Pacemaker and corosync"
+#bash configure-pacemaker.sh $1 $2 $3 $4 $5
