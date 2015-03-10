@@ -5,7 +5,18 @@ chkconfig firewalld on
 service firewalld start
 firewall-cmd --zone=public --add-port=5432/tcp --permanent
 firewall-cmd --zone=public --add-port=5405/tcp --permanent
+firewall-cmd --zone=public --add-port=7788/tcp --permanent
 firewall-cmd --zone=public --add-port=7789/tcp --permanent
+firewall-cmd --zone=public --add-port=7790/tcp --permanent
+firewall-cmd --zone=public --add-port=7791/tcp --permanent
+firewall-cmd --zone=public --add-port=7792/tcp --permanent
+firewall-cmd --zone=public --add-port=7793/tcp --permanent
+firewall-cmd --zone=public --add-port=7794/tcp --permanent
+firewall-cmd --zone=public --add-port=7795/tcp --permanent
+firewall-cmd --zone=public --add-port=7796/tcp --permanent
+firewall-cmd --zone=public --add-port=7797/tcp --permanent
+firewall-cmd --zone=public --add-port=7798/tcp --permanent
+firewall-cmd --zone=public --add-port=7799/tcp --permanent
 firewall-cmd --reload
 
 logger "Setting SELinux as Permissive"

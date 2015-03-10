@@ -305,9 +305,8 @@ Write-Host "Settings for provisioning the environment" -BackgroundColor Black -F
 #$internalLoadBalancerIP = Get-Input -Message "Internal Load Balancer IP (must be in the subnet you specified earlier, example: 10.0.0.100)"
 #$dataDiksSizeGB = Get-Input -Message "Size of Data disks in GB (example: 50)"
 
-$affinityGroup = "pgsqlaff"
-$affinityGroupLocation =  "West Europe"
-$storageAccount =  "pgstoragesabbour"
+$affinityGroupLocation =  "North Europe"
+$storageAccount =  "pgsabbourstorage"
 $networkName =  "pgsqlvnet"
 $vnetAddressPrefix = "10.0.0.0/8"
 $subnetName = "database"
@@ -326,7 +325,7 @@ $dataDiksSizeGB = "10"
 
 # Create Storage Account inside the Affinity Group
 Write-Host "Create the Storage Account" -BackgroundColor Black -ForegroundColor Green
-#New-AzureStorageAccount -StorageAccountName $storageAccount -Location $affinityGroupLocation -Type "Standard_LRS" -Description  "Storage account holding PostgreSQL cluster VHDs"
+New-AzureStorageAccount -StorageAccountName $storageAccount -Location $affinityGroupLocation -Type "Standard_LRS" -Description  "Storage account holding PostgreSQL cluster VHDs"
 
 # Change the default Storage Account to this one
 Write-Host "Using this Storage Account as default" -BackgroundColor Black -ForegroundColor Green
@@ -387,7 +386,7 @@ $PublicConfiguration = '{"fileUris":[
 "https://raw.githubusercontent.com/sabbour/azure-automation/master/postgresql/CustomScripts/configure-drbd.sh",
 "https://raw.githubusercontent.com/sabbour/azure-automation/master/postgresql/CustomScripts/configure-filesystem.sh",
 "https://raw.githubusercontent.com/sabbour/azure-automation/master/postgresql/CustomScripts/configure-postgresql.sh",
-"https://raw.githubusercontent.com/sabbour/azure-automation/master/postgresql/CustomScripts/configure-pacemaker.sh"], "commandToExecute": "bash finalize-postgres.sh ' + ($vmBaseName + "01") + ' ' + ($vmBaseName + "02") + ' ' + $vm1StaticIP + ' ' + $vm2StaticIP + ' ' + $databaseSubnetPrefix + '" }'
+"https://raw.githubusercontent.com/sabbour/azure-automation/master/postgresql/CustomScripts/configure-pacemaker.sh"], "commandToExecute": "bash ./finalize-postgres.sh ' + ($vmBaseName + "01") + ' ' + ($vmBaseName + "02") + ' ' + $vm1StaticIP + ' ' + $vm2StaticIP + ' ' + $databaseSubnetPrefix + '" }'
 
 # Deploy the extension to the VM, pick up the latest version of the extension
 $ExtensionName = 'CustomScriptForLinux'
