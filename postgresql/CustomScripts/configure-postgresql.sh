@@ -13,11 +13,11 @@ if [ $(hostname) == $1 ]; then
   sed -i.bak "s/#listen_addresses = 'localhost'/listen_addresses = '*'/g" /var/lib/pgsql/data/postgresql.conf
 fi
 
-logger "Unmount file system from Primary Node and revert it to be Secondary"
-if [ $(hostname) == $1 ]; then
-    umount /var/lib/pgsql
-    drbdadm secondary r0
-fi
+#logger "Unmount file system from Primary Node and revert it to be Secondary"
+#if [ $(hostname) == $1 ]; then
+#    umount /var/lib/pgsql
+#    drbdadm secondary r0
+#fi
 
 logger "Disabling automatic startup of PostgreSQL as it will be controlled by Pacemaker"
 chkconfig postgresql off
