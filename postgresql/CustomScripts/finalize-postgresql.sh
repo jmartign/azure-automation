@@ -24,5 +24,10 @@ bash ./configure-filesystem.sh $1 $2 $3 $4 $5
 logger "Configuring PostgreSQL"
 bash ./configure-postgresql.sh $1 $2 $3 $4 $5
 
-logger "Configuring Pacemaker and corosync"
+#logger "Configuring Pacemaker and corosync"
 #bash ./configure-pacemaker.sh $1 $2 $3 $4 $5
+
+
+#chkconfig drbd off # pacemaker will manage this
+
+#chkconfig postgresql off

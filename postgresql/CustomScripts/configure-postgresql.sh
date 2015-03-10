@@ -18,6 +18,3 @@ fi
 #    umount /var/lib/pgsql
 #    drbdadm secondary r0
 #fi
-
-logger "Disabling automatic startup of PostgreSQL as it will be controlled by Pacemaker"
-chkconfig postgresql off

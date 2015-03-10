@@ -5,11 +5,7 @@ mdadm --create --verbose /dev/md0 --level=stripe --raid-devices=2 /dev/sdc /dev/
 mdadm --detail --scan >> /etc/mdadm.conf
 
 logger "Configuring DRBD"
-echo "common {
-    syncer { rate 100M; }
-    protocol      C;
-    }
-    resource r0 {
+echo "resource r0 {
     on $1 {
         device /dev/drbd0;
         disk /dev/md0;
@@ -36,5 +32,3 @@ if [ $(hostname) == $1 ]; then
     logger "Setting $2 as DRBD Secondary and waiting for sync"
     drbdadm secondary r0
 fi
-
-chkconfig drbd off # pacemaker will manage this

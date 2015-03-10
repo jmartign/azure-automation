@@ -379,6 +379,10 @@ $loadBalancedPort = 5432
 $vm1Configuration = Add-AzureEndpoint -Name "PostgreSQL" -LBSetName "PostgreSQLSet" -Protocol tcp -LocalPort $loadBalancedPort -PublicPort $loadBalancedPort -ProbePort $loadBalancedPort -ProbeProtocol tcp -ProbeIntervalInSeconds 5 -InternalLoadBalancerName $internalLoadBalancerName -VM $vm1Configuration
 $vm2Configuration = Add-AzureEndpoint -Name "PostgreSQL" -LBSetName "PostgreSQLSet" -Protocol tcp -LocalPort $loadBalancedPort -PublicPort $loadBalancedPort -ProbePort $loadBalancedPort -ProbeProtocol tcp -ProbeIntervalInSeconds 5 -InternalLoadBalancerName $internalLoadBalancerName -VM $vm2Configuration
 
+# Specify the SSH endpoint
+$vm1Configuration = Add-AzureEndpoint -Name "SSH" -Protocol tcp -LocalPort 22 -PublicPort 2022 -VM $vm1Configuration
+$vm2Configuration = Add-AzureEndpoint -Name "SSH" -Protocol tcp -LocalPort 22 -PublicPort 2122 -VM $vm2Configuration
+
 # Set the CustomScript extension to continue setup once the VMs are created
 $PublicConfiguration = '{"fileUris":[
 "https://raw.githubusercontent.com/sabbour/azure-automation/master/postgresql/CustomScripts/finalize-postgresql.sh",
@@ -386,7 +390,7 @@ $PublicConfiguration = '{"fileUris":[
 "https://raw.githubusercontent.com/sabbour/azure-automation/master/postgresql/CustomScripts/configure-drbd.sh",
 "https://raw.githubusercontent.com/sabbour/azure-automation/master/postgresql/CustomScripts/configure-filesystem.sh",
 "https://raw.githubusercontent.com/sabbour/azure-automation/master/postgresql/CustomScripts/configure-postgresql.sh",
-"https://raw.githubusercontent.com/sabbour/azure-automation/master/postgresql/CustomScripts/configure-pacemaker.sh"], "commandToExecute": "bash ./finalize-postgres.sh ' + ($vmBaseName + "01") + ' ' + ($vmBaseName + "02") + ' ' + $vm1StaticIP + ' ' + $vm2StaticIP + ' ' + $databaseSubnetPrefix + '" }'
+"https://raw.githubusercontent.com/sabbour/azure-automation/master/postgresql/CustomScripts/configure-pacemaker.sh"], "commandToExecute": "bash ./finalize-postgresql.sh ' + ($vmBaseName + "01") + ' ' + ($vmBaseName + "02") + ' ' + $vm1StaticIP + ' ' + $vm2StaticIP + ' ' + $databaseSubnetPrefix + '" }'
 
 # Deploy the extension to the VM, pick up the latest version of the extension
 $ExtensionName = 'CustomScriptForLinux'
