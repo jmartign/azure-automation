@@ -1,8 +1,5 @@
 ﻿#!/usr/bin/bash
 
-logger "Installing corosync and pacemaker"
-yum install -y corosync pacemaker pcs
-
 logger "Setting up corosync"
 echo "totem {
   version: 2
@@ -42,6 +39,12 @@ nodelist {
   }
 }
 
+service {
+   # Load the Pacemaker Cluster Resource Manager
+   name: pacemaker
+   ver: 0
+}
+
 quorum {
   provider: corosync_votequorum
 }" > /etc/corosync/corosync.conf
@@ -49,26 +52,56 @@ quorum {
 service corosync start
 chkconfig corosync on
 
-echo "Setting up Pacemaker"
+logger "Setting up Pacemaker"
 service pacemaker start
 chkconfig pacemaker on
 
+#logger "Setting PCS password for hacluster user"
+#echo hacluster:p@ssw0rd.123 | chpasswd
+
 if [ $(hostname) == $1 ]; then
-echo "Configuring Pacemaker resources on Primary Node only"
-pcs cluster cib drbd_cfg
+logger "Configuring Pacemaker resources on Primary Node only"
+logger "Disabling STONITH, setting resource stickiness and quorum policy to 'ignore' for a 2-node cluster"
+pcs property set stonith-enabled=false
+pcs property set default-resource-stickiness=100
+pcs property set no-quorum-policy=ignore
 
-pcs -f drbd_cfg  property set stonith-enabled=false
-pcs -f drbd_cfg  property set default-resource-stickiness=100
-pcs -f drbd_cfg  property set no-quorum-policy=ignore
-pcs -f drbd_cfg resource create drbd_pgsql ocf:linbit:drbd drbd_resource=r0 op monitor interval=29s role="Master" interval=31s role="Slave"
-pcs -f drbd_cfg resource master drbd_pgsqlclone drbd_pgsql master-max=1 master-node-max=1 clone-max=2 clone-node-max=1 notify=true
-pcs -f drbd_cfg resource create fs_pgsql ocf:heartbeat:Filesystem params device="/dev/drbd/by-res/r0" directory="/var/lib/pgsql/data" fstype="ext4"
-pcs -f drbd_cfg resource create pg systemd:postgresql op monitor interval="30" opstart interval="0" timeout="60" op stop interval="0" timeout="60"
+logger "Adding DRBD resource on cluster"
+pcs resource create drbd_postgres ocf:linbit:drbd drbd_resource=r0 op monitor interval=15s
 
-echo "Gluing parts together"
-pcs -f drbd_cfg resource group add postgresql fs_pgsql pg
-pcs -f drbd_cfg  constraint colocation add postgresql with Master drbd_pgsqlclone INFINITY
-pcs -f drbd_cfg  constraint order promote drbd_pgsqlclone then start postgresql
+logger "Configure the DRBD primary and secondary node"
+pcs resource master ms_drbd_postgres drbd_postgres master-max=1 master-node-max=1 clone-max=2 clone-node-max=1 notify=true
 
-pcs cluster cib-push drbd_cfg
+logger "Configure the DRBD mounting filesystem (and mountpoint)"
+pcs resource create postgres_fs ocf:heartbeat:Filesystem params device="/dev/drbd0" directory="/var/lib/pgsql" fstype="ext4"
+
+logger "Adding the postgresql resource on cluster"
+pcs resource create postgresql ocf:heartbeat:pgsql op monitor timeout="30" interval="30"
+
+logger "Grouping postgresql and DRBD mounted filesystem. The name of the group will be 'postgres'"
+pcs resource group add postgres postgres_fs postgresql
+
+logger "Fixing group postgres to run together with DRBD Primary node"
+pcs constraint colocation add postgresql with Master ms_drbd_postgres INFINITY
+
+logger "Configuring postgres to run after DRBD"
+pcs constraint order promote ms_drbd_postgres then start postgresql
+
+logger "Cleaning up"
+pcs resource cleanup postgres_fs
+pcs resource cleanup postgresql
+
+logger "Starting resources"
+pcs resource enable postgres_fs
+
+#echo "To test, try the below commands while observing 'crm_mon'"
+#echo "pcs cluster standby pgsql01"
+#echo "pcs cluster unstandby pgsql01"
 fi
+
+#logger "Enabling cluster-components to start up at boot"
+#chkconfig pcsd on
+#service pcsd start
+
+chkconfig corosync-notifyd on
+service corosync-notifyd start
