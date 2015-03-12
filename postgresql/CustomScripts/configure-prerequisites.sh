@@ -112,7 +112,7 @@ systemctl disable drbd.service
 systemctl disable postgresql.service
 
 logger "Downloading the pacemaker configuration script"
-curl -o ~/configure-pacemaker.sh https://raw.githubusercontent.com/sabbour/azure-automation/master/postgresql/CustomScripts/configure-prerequisites.sh
+curl -o ~/configure-pacemaker.sh https://raw.githubusercontent.com/sabbour/azure-automation/master/postgresql/CustomScripts/configure-pacemaker.sh
 chmod +x ~/configure-pacemaker.sh
 
 logger "Setting up MOTD with relevant information"

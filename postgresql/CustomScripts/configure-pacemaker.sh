@@ -70,7 +70,7 @@ pcs property set no-quorum-policy=ignore
 
 logger "Adding DRBD resource on cluster"
 pcs cluster cib drbd_cfg
-pcs resource create drbd_postgres ocf:linbit:drbd drbd_resource=r0 op monitor interval=15s
+pcs -f drbd_cfg resource create drbd_postgres ocf:linbit:drbd drbd_resource=r0 op monitor interval=15s
 
 logger "Configure the DRBD primary and secondary node"
 pcs -f drbd_cfg resource master ms_drbd_postgres drbd_postgres master-max=1 master-node-max=1 clone-max=2 clone-node-max=1 notify=true
@@ -93,12 +93,6 @@ pcs -f drbd_cfg constraint order promote ms_drbd_postgres then start postgresql
 logger "Applying changes"
 pcs cluster cib-push drbd_cfg
 
-logger "Setting PCS password for hacluster user"
-echo hacluster:p@ssw0rd.123 | chpasswd
-pcs cluster auth -u hacluster -p p@ssw0rd.123
-systemctl start pcsd.service
-systemctl enable pcsd.service
-
 logger "Cleaning up"
 pcs resource cleanup postgres_fs
 pcs resource cleanup ms_drbd_postgres
@@ -107,6 +101,13 @@ pcs resource cleanup postgresql
 logger "Starting resources"
 pcs resource enable postgres_fs
 fi
+
+logger "Setting PCS password for hacluster user"
+systemctl start pcsd.service
+systemctl enable pcsd.service
+
+echo hacluster:p@ssw0rd.123 | chpasswd
+pcs cluster auth -u hacluster -p p@ssw0rd.123
 
 logger "Setting up MOTD with relevant information"
 echo "
