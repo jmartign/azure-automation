@@ -111,6 +111,20 @@ logger "Preventing postgresql and drbd from starting on boot as this will be con
 systemctl disable drbd.service
 systemctl disable postgresql.service
 
+logger "Downloading the pacemaker configuration script"
+curl -o ~/configure-pacemaker.sh https://raw.githubusercontent.com/sabbour/azure-automation/master/postgresql/CustomScripts/configure-prerequisites.sh
+chmod +x ~/configure-pacemaker.sh
+
+logger "Setting up MOTD with relevant information"
+echo "
+= + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + =
+| This cluster needs further setup, please follow instructions below                  |
+= + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + =
+| On both nodes continue setup by running:                                            |
+| - ~/configure-pacemaker.sh $1 $2 $3 $4 $5 $6                                           |
+= + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + =
+" > /etc/motd
+
 # Node 1: Create test database using pgbench
 #service postgresql start
 #su -c 'createdb pgbench' - postgres

@@ -325,22 +325,22 @@ $dataDiksSizeGB = "5"
 
 # Create Storage Account inside the Affinity Group
 Write-Host "Create the Storage Account" -BackgroundColor Black -ForegroundColor Green
-New-AzureStorageAccount -StorageAccountName $storageAccount -Location $affinityGroupLocation -Type "Standard_LRS" -Description  "Storage account holding PostgreSQL cluster VHDs"
+#New-AzureStorageAccount -StorageAccountName $storageAccount -Location $affinityGroupLocation -Type "Standard_LRS" -Description  "Storage account holding PostgreSQL cluster VHDs"
 
 # Change the default Storage Account to this one
 Write-Host "Using this Storage Account as default" -BackgroundColor Black -ForegroundColor Green
-Set-AzureSubscription -SubscriptionName (Get-AzureSubscription –Current).SubscriptionName -CurrentStorageAccount $storageAccount
+#Set-AzureSubscription -SubscriptionName (Get-AzureSubscription –Current).SubscriptionName -CurrentStorageAccount $storageAccount
 
 # Create Virtual Network
 Write-Host "Create the Virtual Network" -BackgroundColor Black -ForegroundColor Green
-$workingVnetConfig = get-azureNetworkXml
-add-azureVnetNetwork  -location $affinityGroupLocation -networkName $networkName -addressPrefix $vnetAddressPrefix
-add-azureVnetSubnet -networkName $networkName -subnetName $subnetName -addressPrefix ($databaseSubnetPrefix+$databaseSubnetCIDR)
-save-azurenetworkxml($workingVnetConfig)
+#$workingVnetConfig = get-azureNetworkXml
+#add-azureVnetNetwork  -location $affinityGroupLocation -networkName $networkName -addressPrefix $vnetAddressPrefix
+#add-azureVnetSubnet -networkName $networkName -subnetName $subnetName -addressPrefix ($databaseSubnetPrefix+$databaseSubnetCIDR)
+#save-azurenetworkxml($workingVnetConfig)
 
 # Create a Cloud Service to hold the VMs
 Write-Host "Create a Cloud Service to hold the machines" -BackgroundColor Black -ForegroundColor Green
-New-AzureService -ServiceName $cloudServiceName -Location $affinityGroupLocation -Description "PostgreSQL Cluster Cloud Service" -Verbose
+#New-AzureService -ServiceName $cloudServiceName -Location $affinityGroupLocation -Description "PostgreSQL Cluster Cloud Service" -Verbose
 
 # Get the CentOS7 VM image (last one, probably most up to date)
 Write-Host "Latest image of CentOS 7" -BackgroundColor Black -ForegroundColor Green
@@ -384,10 +384,8 @@ $vm1Configuration = Set-AzureEndpoint -Name "SSH" -Protocol tcp -LocalPort 22 -P
 $vm2Configuration = Set-AzureEndpoint -Name "SSH" -Protocol tcp -LocalPort 22 -PublicPort 2122 -VM $vm2Configuration
 
 # Set the CustomScript extension to continue setup once the VMs are created
-$PublicConfiguration = '{"fileUris":[
-"https://raw.githubusercontent.com/sabbour/azure-automation/master/postgresql/CustomScripts/finalize-postgresql.sh",
-"https://raw.githubusercontent.com/sabbour/azure-automation/master/postgresql/CustomScripts/configure-prerequisites.sh",
-"https://raw.githubusercontent.com/sabbour/azure-automation/master/postgresql/CustomScripts/configure-pacemaker.sh"], "commandToExecute": "bash ./finalize-postgresql.sh ' + ($vmBaseName + "01") + ' ' + ($vmBaseName + "02") + ' ' + $vm1StaticIP + ' ' + $vm2StaticIP + ' ' + $databaseSubnetPrefix + ' ' + $internalLoadBalancerIP '" }'
+$PublicConfiguration = '{"fileUris":
+"https://raw.githubusercontent.com/sabbour/azure-automation/master/postgresql/CustomScripts/configure-prerequisites.sh"], "commandToExecute": "bash ./configure-prerequisites.sh ' + ($vmBaseName + "01") + ' ' + ($vmBaseName + "02") + ' ' + $vm1StaticIP + ' ' + $vm2StaticIP + ' ' + $databaseSubnetPrefix + ' ' + $internalLoadBalancerIP + '" }'
 
 # Deploy the extension to the VM, pick up the latest version of the extension
 $ExtensionName = 'CustomScriptForLinux'

@@ -1,4 +1,4 @@
-﻿#!/usr/bin/bash
+#!/usr/bin/bash
 
 logger "Setting up corosync"
 echo "totem {
@@ -48,15 +48,18 @@ service {
 quorum {
   provider: corosync_votequorum
 }" > /etc/corosync/corosync.conf
-systemctl start corosync.service
-systemctl enable corosync.service
+
 
 logger "Setting up Pacemaker"
 systemctl start pacemaker.service
 systemctl enable pacemaker.service
 
-#logger "Setting PCS password for hacluster user"
-#echo hacluster:p@ssw0rd.123 | chpasswd
+systemctl start corosync.service
+systemctl enable corosync.service
+
+systemctl start corosync-notifyd.service
+systemctl enable corosync-notifyd.service
+
 
 if [ $(hostname) == $1 ]; then
 logger "Configuring Pacemaker resources on Primary Node only"
@@ -66,41 +69,61 @@ pcs property set default-resource-stickiness=100
 pcs property set no-quorum-policy=ignore
 
 logger "Adding DRBD resource on cluster"
+pcs cluster cib drbd_cfg
 pcs resource create drbd_postgres ocf:linbit:drbd drbd_resource=r0 op monitor interval=15s
 
 logger "Configure the DRBD primary and secondary node"
-pcs resource master ms_drbd_postgres drbd_postgres master-max=1 master-node-max=1 clone-max=2 clone-node-max=1 notify=true
+pcs -f drbd_cfg resource master ms_drbd_postgres drbd_postgres master-max=1 master-node-max=1 clone-max=2 clone-node-max=1 notify=true
 
 logger "Configure the DRBD mounting filesystem (and mountpoint)"
-pcs resource create postgres_fs ocf:heartbeat:Filesystem params device="/dev/drbd0" directory="/var/lib/pgsql" fstype="ext4"
+pcs -f drbd_cfg resource create postgres_fs ocf:heartbeat:Filesystem params device="/dev/drbd0" directory="/var/lib/pgsql" fstype="ext4"
 
 logger "Adding the postgresql resource on cluster"
-pcs resource create postgresql ocf:heartbeat:pgsql op monitor timeout="30" interval="30"
+pcs -f drbd_cfg resource create postgresql ocf:heartbeat:pgsql op monitor timeout="30" interval="30"
 
 logger "Grouping postgresql and DRBD mounted filesystem. The name of the group will be 'postgres'"
-pcs resource group add postgres postgres_fs postgresql
+pcs -f drbd_cfg resource group add postgres postgres_fs postgresql
 
 logger "Fixing group postgres to run together with DRBD Primary node"
-pcs constraint colocation add postgresql with Master ms_drbd_postgres INFINITY
+pcs -f drbd_cfg constraint colocation add postgresql with Master ms_drbd_postgres INFINITY
 
 logger "Configuring postgres to run after DRBD"
-pcs constraint order promote ms_drbd_postgres then start postgresql
+pcs -f drbd_cfg constraint order promote ms_drbd_postgres then start postgresql
+
+logger "Applying changes"
+pcs cluster cib-push drbd_cfg
+
+logger "Setting PCS password for hacluster user"
+echo hacluster:p@ssw0rd.123 | chpasswd
+pcs cluster auth -u hacluster -p p@ssw0rd.123
+systemctl start pcsd.service
+systemctl enable pcsd.service
 
 logger "Cleaning up"
 pcs resource cleanup postgres_fs
+pcs resource cleanup ms_drbd_postgres
 pcs resource cleanup postgresql
 
 logger "Starting resources"
 pcs resource enable postgres_fs
-
-#echo "To test, try the below commands while observing 'crm_mon'"
-#echo "pcs cluster standby pgsql01"
-#echo "pcs cluster unstandby pgsql01"
 fi
 
-#logger "Enabling cluster-components to start up at boot"
-#chkconfig pcsd on
-#service pcsd start
-
-systemctl start corosync-notifyd.service
-systemctl enable corosync-notifyd.service
+logger "Setting up MOTD with relevant information"
+echo "
+= + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + =
+| Welcome to the 2-node highly available PostgreSQL system on Azure.                  |
+= + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + =
+| Useful information about the cluster:                                               |
+| - Node 1 ($1 - $3)                                                                  |
+| - Node 2 ($2 - $4)                                                                  |
+| - Load Balancer IP ($6). You would use this to connect to PostgreSQL.               |
+= + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + =
+| Useful commands:                                                                    |
+| - Find information about the cluster: crm_mon -1 and pcs status                     |
+| - Verify cluster setup: crm_verify -LV                                              |
+| - Verify nodes on the clusteR: corosync-cmapctl  | grep members                     |
+| - Connect to PostgreSQL: psql -h $6 -u posrgres                                     |
+| - Test failover on $1 (run crm_mon to observe): pcs cluster standby $1              |
+| - Revert failover on $1: pcs cluster unstandby $1                                   |
+= + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + =
+" > /etc/motd
