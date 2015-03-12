@@ -387,7 +387,7 @@ $vm2Configuration = Set-AzureEndpoint -Name "SSH" -Protocol tcp -LocalPort 22 -P
 $PublicConfiguration = '{"fileUris":[
 "https://raw.githubusercontent.com/sabbour/azure-automation/master/postgresql/CustomScripts/finalize-postgresql.sh",
 "https://raw.githubusercontent.com/sabbour/azure-automation/master/postgresql/CustomScripts/configure-prerequisites.sh",
-"https://raw.githubusercontent.com/sabbour/azure-automation/master/postgresql/CustomScripts/configure-pacemaker.sh"], "commandToExecute": "bash ./finalize-postgresql.sh ' + ($vmBaseName + "01") + ' ' + ($vmBaseName + "02") + ' ' + $vm1StaticIP + ' ' + $vm2StaticIP + ' ' + $databaseSubnetPrefix + '" }'
+"https://raw.githubusercontent.com/sabbour/azure-automation/master/postgresql/CustomScripts/configure-pacemaker.sh"], "commandToExecute": "bash ./finalize-postgresql.sh ' + ($vmBaseName + "01") + ' ' + ($vmBaseName + "02") + ' ' + $vm1StaticIP + ' ' + $vm2StaticIP + ' ' + $databaseSubnetPrefix + ' ' + $internalLoadBalancerIP '" }'
 
 # Deploy the extension to the VM, pick up the latest version of the extension
 $ExtensionName = 'CustomScriptForLinux'
