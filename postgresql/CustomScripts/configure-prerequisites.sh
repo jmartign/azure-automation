@@ -1,8 +1,9 @@
 #!/usr/bin/bash
 
 logger "Opening required firewall ports"
-chkconfig firewalld on
-service firewalld start
+systemctl enable firewalld.service
+systemctl start firewalld.service
+
 firewall-cmd --zone=public --add-port=5432/tcp --permanent #pgsql
 firewall-cmd --zone=public --permanent --add-service=high-availability #corosync,pcs
 firewall-cmd --zone=public --add-port=7788/tcp --permanent #drbd
@@ -19,8 +20,8 @@ firewall-cmd --zone=public --add-port=7798/tcp --permanent #drbd
 firewall-cmd --zone=public --add-port=7799/tcp --permanent #drbd
 firewall-cmd --reload
 
-chkconfig firewalld off
-service firewalld stop
+systemctl disable firewalld.service
+systemctl stop firewalld.service
 
 logger "Setting SELinux as Permissive"
 sed -i.bak 's/SELINUX=enforcing/SELINUX=permissive/g' /etc/selinux/config
@@ -35,8 +36,9 @@ yum install -y mdadm drbd84-utils kmod-drbd84 ntp postgresql-server postgresql-c
 
 logger "Configuring NTP"
 ntpdate pool.ntp.org
-chkconfig ntpd on
-service ntpd start
+
+systemctl enable ntpd.service
+systemctl start ntpd.service
 
 logger "Creating low-level RAID device"
 mdadm --create --verbose /dev/md0 --level=stripe --raid-devices=2 /dev/sdc /dev/sdd
@@ -100,14 +102,14 @@ fi
 
 logger "Postgres should be working by now"
 logger "Stopping Postgres, unmounting /dev/drbd0, setting it as secondary and stopping drbd"
-service postgresql stop
+systemctl stop postgresql.service
 umount /dev/drbd0
 drbdadm secondary r0
-service drbd stop
+systemctl stop drbd.service
 
 logger "Preventing postgresql and drbd from starting on boot as this will be controlled by pacemaker"
-chkconfig drbd off
-chkconfig postgresql off
+systemctl disable drbd.service
+systemctl disable postgresql.service
 
 # Node 1: Create test database using pgbench
 #service postgresql start

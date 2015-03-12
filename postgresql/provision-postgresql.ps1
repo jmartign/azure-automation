@@ -292,7 +292,7 @@ Write-Host "Settings for provisioning the environment" -BackgroundColor Black -F
 #$networkName =  Get-Input -message "Network name (example: pgsqlnet)"
 #$vnetAddressPrefix = Get-Input -message "Address and CIDR (example: 10.0.0.0/8)"
 #$subnetName = Get-Input -message "Database subnet name (example: database)"
-#$databaseSubnetPrefix = Get-Input -message "Database subnet prefix (example: 10.0.0.0)"
+#$databaseSubnetPrefix = Get-Input -message "Database subnet (example: 10.0.0.0)"
 #$databaseSubnetCIDR = Get-Input -message "Database subnet CIDR (example: /24)"
 #$cloudServiceName =  Get-Input -message "Cloud Service host name (example: postgresqlcs)"
 #$availabilitySetName =  Get-Input -message "Availability Set name (example: posgresqlavset)"
@@ -307,7 +307,7 @@ Write-Host "Settings for provisioning the environment" -BackgroundColor Black -F
 
 $affinityGroupLocation =  "North Europe"
 $storageAccount =  "pgsabbourstorage"
-$networkName =  "pgsqlvnet"
+$networkName =  "pgsqlvnetwork"
 $vnetAddressPrefix = "10.0.0.0/8"
 $subnetName = "database"
 $databaseSubnetPrefix = "10.0.0.0"
@@ -321,7 +321,7 @@ $vm1StaticIP = "10.0.0.5"
 $vm2StaticIP = "10.0.0.6"
 $internalLoadBalancerName = "pgsqllb"
 $internalLoadBalancerIP = "10.0.0.100"
-$dataDiksSizeGB = "10"
+$dataDiksSizeGB = "5"
 
 # Create Storage Account inside the Affinity Group
 Write-Host "Create the Storage Account" -BackgroundColor Black -ForegroundColor Green

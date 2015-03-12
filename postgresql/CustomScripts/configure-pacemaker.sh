@@ -48,13 +48,12 @@ service {
 quorum {
   provider: corosync_votequorum
 }" > /etc/corosync/corosync.conf
-
-service corosync start
-chkconfig corosync on
+systemctl start corosync.service
+systemctl enable corosync.service
 
 logger "Setting up Pacemaker"
-service pacemaker start
-chkconfig pacemaker on
+systemctl start pacemaker.service
+systemctl enable pacemaker.service
 
 #logger "Setting PCS password for hacluster user"
 #echo hacluster:p@ssw0rd.123 | chpasswd
@@ -103,5 +102,5 @@ fi
 #chkconfig pcsd on
 #service pcsd start
 
-chkconfig corosync-notifyd on
-service corosync-notifyd start
+systemctl start corosync-notifyd.service
+systemctl enable corosync-notifyd.service
